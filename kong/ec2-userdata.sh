@@ -11,7 +11,7 @@ echo "deb [signed-by=/usr/share/keyrings/kong.gpg] https://packages.konghq.com/p
 
 # Install Kong
 sudo apt-get update -y
-sudo apt-get install -y kong
+sudo apt-get install -y kong-enterprise-edition
 
 # Deploy configuration
 sudo mkdir -p /etc/kong
