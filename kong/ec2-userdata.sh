@@ -21,3 +21,5 @@ sudo cp /tmp/kong-api-gw/kong/kong.yaml /etc/kong/
 
 # Start Kong
 sudo kong start -c /etc/kong/kong.conf
+
+##keypair  aws-keypair
