@@ -1,0 +1,28 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: example-service
+    url: https://httpbin.org
+    routes:
+      - name: example-route
+        paths:
+          - /example
+
+plugins:
+  - name: rate-limiting
+    service: example-service
+    config:
+      minute: 10
+      policy: local
+
+  - name: key-auth
+    service: example-service
+    config:
+      key_names:
+        - apikey
+
+consumers:
+  - username: test-user
+    keyauth_credentials:
+      - key: my-secret-key
