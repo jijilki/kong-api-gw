@@ -3,7 +3,7 @@ set -e
 
 # Install dependencies
 sudo apt-get update -y
-sudo apt-get install -y curl gnupg lsb-release git python3-pip python3-venv
+sudo apt-get install -y curl gnupg lsb-release git python3-pip python3-venv unzip
 
 # --------------------------
 # Install Flask
@@ -55,45 +55,50 @@ sudo kong start -c /etc/kong/kong.conf
 
 echo "Setup complete. Kong and Flask are running."
 
-# --------------------------
-# Setup CloudWatch Logging
-# --------------------------
-sudo apt-get install -y amazon-cloudwatch-agent
 
-# Create CloudWatch Agent configuration
-sudo tee /opt/aws/amazon-cloudwatch-agent/bin/config.json > /dev/null <<'CWEOF'
+# --------------------------
+# Install CloudWatch Agent
+# --------------------------
+cd /tmp
+curl -O https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+sudo dpkg -i amazon-cloudwatch-agent.deb || sudo apt-get install -f -y
+
+# Create CloudWatch agent config
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null <<EOF
 {
-  "agent": {
-    "metrics_collection_interval": 60,
-    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/agent.log",
-    "run_as_user": "root"
-  },
   "logs": {
     "logs_collected": {
       "files": {
         "collect_list": [
           {
+            "file_path": "/home/ubuntu/flask-api/app.log",
+            "log_group_name": "FlaskAPI-Logs",
+            "log_stream_name": "{instance_id}-flask",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
+          },
+          {
             "file_path": "/usr/local/kong/logs/access.log",
-            "log_group_name": "kong-access-log",
-            "log_stream_name": "{instance_id}"
+            "log_group_name": "KongAPI-Logs",
+            "log_stream_name": "{instance_id}-kong-access",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
           },
           {
             "file_path": "/usr/local/kong/logs/error.log",
-            "log_group_name": "kong-error-log",
-            "log_stream_name": "{instance_id}"
-          },
-          {
-            "file_path": "/home/ubuntu/flask-api/app.log",
-            "log_group_name": "flask-app-log",
-            "log_stream_name": "{instance_id}"
+            "log_group_name": "KongAPI-Logs",
+            "log_stream_name": "{instance_id}-kong-error",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
           }
         ]
       }
     }
   }
 }
-CWEOF
+EOF
 
 # Start CloudWatch Agent
-sudo systemctl enable amazon-cloudwatch-agent
-sudo systemctl start amazon-cloudwatch-agent
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
+
+echo "Setup complete. Flask, Kong, and CloudWatch Agent are running."
