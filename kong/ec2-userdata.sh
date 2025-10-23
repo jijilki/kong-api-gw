@@ -3,7 +3,38 @@ set -e
 
 # Install dependencies
 sudo apt-get update -y
-sudo apt-get install -y curl gnupg lsb-release git
+sudo apt-get install -y curl gnupg lsb-release git python3-pip python3-venv
+
+# --------------------------
+# Install Flask
+# --------------------------
+pip3 install --user flask
+
+# --------------------------
+# Set up Flask app
+# --------------------------
+FLASK_DIR=/home/ubuntu/flask-api
+mkdir -p $FLASK_DIR
+sudo chown -R ubuntu:ubuntu $FLASK_DIR
+chmod -R 755 $FLASK_DIR
+
+cat <<'EOF' > $FLASK_DIR/app.py
+from flask import Flask, jsonify
+app = Flask(__name__)
+
+@app.route('/getHello')
+def hello():
+    return jsonify({"message": "Hello from Flask API behind Kong!"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
+EOF
+
+# --------------------------
+# Start Flask in background
+# --------------------------
+nohup python3 $FLASK_DIR/app.py > $FLASK_DIR/app.log 2>&1 &
+
 
 # Add Kong GPG key and repo
 curl -fsSL https://packages.konghq.com/public/gateway-312/gpg.875433A518B93006.key | gpg --dearmor | sudo tee /usr/share/keyrings/kong.gpg > /dev/null
@@ -21,27 +52,6 @@ sudo cp /tmp/kong-api-gw/kong/kong.yaml /etc/kong/
 
 # Start Kong
 sudo kong start -c /etc/kong/kong.conf
-
-##keypair  aws-keypair
-
-# --------------------------
-# Deploy a simple Flask API
-# --------------------------
-mkdir -p /home/ubuntu/flask-api
-cat <<'EOF' > /home/ubuntu/flask-api/app.py
-from flask import Flask, jsonify
-app = Flask(__name__)
-
-@app.route('/getHello')
-def hello():
-    return jsonify({"message": "Hello from Flask API behind Kong!"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
-EOF
-
-# Run the Flask app in background
-nohup python3 /home/ubuntu/flask-api/app.py > /home/ubuntu/flask-api/app.log 2>&1 &
 
 echo "Setup complete. Kong and Flask are running."
 
