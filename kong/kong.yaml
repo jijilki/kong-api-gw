@@ -2,22 +2,22 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  - name: example-service
-    url: https://httpbin.org
+  - name: hello-service
+    url: http://127.0.0.1:8080
     routes:
-      - name: example-route
+      - name: hello-route
         paths:
-          - /example
+          - /hello
 
 plugins:
   - name: rate-limiting
-    service: example-service
+    service: hello-service
     config:
       minute: 10
       policy: local
 
   - name: key-auth
-    service: example-service
+    service: hello-service
     config:
       key_names:
         - apikey
