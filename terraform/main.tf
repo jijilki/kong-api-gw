@@ -87,3 +87,60 @@ resource "aws_iam_instance_profile" "kong_instance_profile" {
   name = "kong-instance-profile"
   role = aws_iam_role.kong_ec2_role.name
 }
+
+
+resource "aws_s3_bucket" "neo_code_artifacts" {
+  bucket        = "neo-code-artifacts-bucket"
+  acl           = "private"
+  force_destroy = false
+
+  tags = {
+    Name = "neo-code-artifacts-bucket"
+    Env  = "prod"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "neo_code_artifacts_block" {
+  bucket = aws_s3_bucket.neo_code_artifacts.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_iam_policy" "kong_ec2_s3_access" {
+  name        = "kong-ec2-s3-access"
+  description = "Allow EC2 instances in kong role to access neo-code-artifacts-bucket"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.neo_code_artifacts.arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = [
+          "${aws_s3_bucket.neo_code_artifacts.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_s3_policy_to_kong_role" {
+  role       = aws_iam_role.kong_ec2_role.name
+  policy_arn = aws_iam_policy.kong_ec2_s3_access.arn
+}
