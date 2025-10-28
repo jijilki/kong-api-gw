@@ -102,3 +102,44 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -s
 
 echo "Setup complete. Flask, Kong, and CloudWatch Agent are running."
+
+
+# --------------------------
+# Download Spring Boot JAR and Dockerfile from S3
+# --------------------------
+SPRING_DIR=/home/ubuntu/spring-api
+mkdir -p $SPRING_DIR
+sudo chown -R ubuntu:ubuntu $SPRING_DIR
+chmod -R 755 $SPRING_DIR
+
+# Replace with your actual S3 paths
+aws s3 cp s3://your-bucket-name/spring-app/todo.jar $SPRING_DIR/todo.jar
+aws s3 cp s3://your-bucket-name/spring-app/Dockerfile $SPRING_DIR/Dockerfile
+
+# --------------------------
+# Install Docker
+# --------------------------
+sudo apt-get install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# --------------------------
+# Build and run Docker container
+# --------------------------
+cd $SPRING_DIR
+sudo docker build -t spring-api .
+sudo docker run -d -p 9090:8080 --name spring-api spring-api
+
+# --------------------------
+# Register Spring API with Kong
+# --------------------------
+curl -i -X POST http://localhost:8001/services/ \
+  --data name=spring-api \
+  --data url=http://localhost:9090
+
+curl -i -X POST http://localhost:8001/services/spring-api/routes \
+  --data paths[]=/spring
+
+echo "Spring Boot API deployed and registered with Kong."
+
+#todo logs for spring app.
