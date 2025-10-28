@@ -94,6 +94,11 @@ resource "aws_s3_bucket" "neo_code_artifacts" {
   acl           = "private"
   force_destroy = false
 
+  lifecycle {
+    prevent_destroy = true //so that bucket will not be deleted .
+  }
+
+
   tags = {
     Name = "neo-code-artifacts-bucket"
     Env  = "prod"
