@@ -50,8 +50,16 @@ sudo git clone https://github.com/jijilki/kong-api-gw.git /tmp/kong-api-gw
 sudo cp /tmp/kong-api-gw/kong/kong.conf /etc/kong/
 sudo cp /tmp/kong-api-gw/kong/kong.yaml /etc/kong/
 
+#faced issues with permissions later when running kong, so fixing permissions
+# Fix permissions for Kong runtime files
+sudo mkdir -p /usr/local/kong
+sudo touch /usr/local/kong/.kong_env /usr/local/kong/.ca_combined
+sudo chown -R ubuntu:ubuntu /usr/local/kong
+sudo find /usr/local/kong -type f -exec chmod 644 {} \;
+
 # Start Kong
 sudo kong start -c /etc/kong/kong.conf
+``
 
 echo "Setup complete. Kong and Flask are running."
 

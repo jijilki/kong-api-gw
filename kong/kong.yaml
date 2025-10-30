@@ -15,17 +15,6 @@ services:
         paths:
           - /todo
         strip_path: false
-        plugins:
-          - name: oidc
-            config:
-              client_id: kong-client
-              client_secret: kong-secret
-              discovery: http://keycloak:8080/realms/myrealm/.well-known/openid-configuration
-              redirect_uri: http://localhost:9090
-              scope: openid
-              session_secret: supersecret
-              bearer_only: "no"
-              filters: ".*"
 
 plugins:
   - name: rate-limiting
@@ -39,7 +28,17 @@ plugins:
     config:
       key_names:
         - apikey
-
+  - name: oidc
+    service: todo-service
+    config:
+      client_id: kong-client
+      client_secret: kong-secret
+      discovery: http://keycloak:8080/realms/myrealm/.well-known/openid-configuration
+      redirect_uri: http://localhost:9090
+      scope: openid
+      session_secret: supersecret
+      bearer_only: "no"
+      filters: ".*"
 consumers:
   - username: test-user
     keyauth_credentials:
